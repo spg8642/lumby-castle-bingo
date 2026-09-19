@@ -1,4 +1,4 @@
-// Lumby Castle Bingo Tracker — shared Supabase build v2
+// Lumby Castle Bingo Tracker — password admin login
 const SUPABASE_URL = "https://dalmbojtmewamdvyopfh.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_VxVvixDgPN7dnrfoPbCQpw_et5ZeR8t";
 
@@ -46,7 +46,7 @@ async function updateAuthUI() {
 
 async function init() {
   if (!configured) {
-    setSetupNotice("<strong>Setup required:</strong> The live app.js still contains placeholder Supabase settings. Replace SUPABASE_ANON_KEY with your real public/publishable key, then commit the file to GitHub.");
+    setSetupNotice("<strong>Setup required:</strong> Replace SUPABASE_ANON_KEY in <code>app.js</code> with your real public/publishable key.");
     renderEmpty();
     return;
   }
@@ -284,17 +284,32 @@ $("loginBtn").onclick = async () => {
   const email = prompt("Admin email:");
   if (!email) return;
 
-  const { error } = await db.auth.signInWithOtp({
-    email,
-    options: {
-      emailRedirectTo: "https://spg8642.github.io/lumby-castle-bingo/"
-    }
-  });
+  const password = prompt("Admin password:");
+  if (!password) return;
 
-  alert(error ? error.message : "Check your email for the login link.");
+  const { error } = await db.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    alert("Login failed: " + error.message);
+    return;
+  }
+
+  session = (await db.auth.getSession()).data.session;
+  await updateAuthUI();
+  await loadAll();
+
+  if (!isAdmin()) {
+    alert("Login succeeded, but this account is not listed as a bingo administrator.");
+  }
 };
 
-$("logoutBtn").onclick = () => db.auth.signOut();
+$("logoutBtn").onclick = async () => {
+  await db.auth.signOut();
+  session = null;
+  adminStatus = false;
+  await updateAuthUI();
+  render();
+};
 
 $("addTeamBtn").onclick = async () => {
   if (!isAdmin()) return;
@@ -302,22 +317,27 @@ $("addTeamBtn").onclick = async () => {
   if (!name) return;
   const p1 = prompt("Player 1:") || "";
   const p2 = prompt("Player 2:") || "";
-  await db.from("teams").insert({name, player1:p1, player2:p2});
+  const { error } = await db.from("teams").insert({name, player1:p1, player2:p2});
+  if (error) alert(error.message);
 };
 
 $("editTeamBtn").onclick = async () => {
+  if (!isAdmin()) return;
   const t = activeTeam();
   if (!t) return;
   const name = prompt("Team name:", t.name) || t.name;
   const p1 = prompt("Player 1:", t.player1) || t.player1;
   const p2 = prompt("Player 2:", t.player2) || t.player2;
-  await db.from("teams").update({name,player1:p1,player2:p2}).eq("id",t.id);
+  const { error } = await db.from("teams").update({name,player1:p1,player2:p2}).eq("id",t.id);
+  if (error) alert(error.message);
 };
 
 $("deleteTeamBtn").onclick = async () => {
+  if (!isAdmin()) return;
   const t = activeTeam();
   if (t && confirm(`Delete ${t.name}?`)) {
-    await db.from("teams").delete().eq("id",t.id);
+    const { error } = await db.from("teams").delete().eq("id",t.id);
+    if (error) alert(error.message);
   }
 };
 
@@ -336,8 +356,9 @@ $("importInput").onchange = async e => {
 
 $("resetBtn").onclick = async () => {
   if (!isAdmin() || !confirm("Reset all completion statuses?")) return;
-  await db.from("completions").delete().neq("id","00000000-0000-0000-0000-000000000000");
-  await loadAll();
+  const { error } = await db.from("completions").delete().neq("id","00000000-0000-0000-0000-000000000000");
+  if (error) alert(error.message);
+  else await loadAll();
 };
 
 init();
