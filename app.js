@@ -20,7 +20,11 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 
 function setSetupNotice(msg, show=true){ $("setupNotice").innerHTML = msg; $("setupNotice").classList.toggle("hidden", !show); }
 
-function isAdmin(){ return !!session?.user && session.user.app_metadata?.is_admin === true; }
+let adminStatus = false;
+
+function isAdmin(){
+  return !!session?.user && adminStatus;
+}
 
 async function init(){
   if(!configured){ setSetupNotice("<strong>Setup required:</strong> Add your Supabase URL and anon key to <code>app.js</code>. See <code>README.md</code>."); renderEmpty(); return; }
@@ -46,10 +50,24 @@ async function loadAll(){
   if(activeTeamId && !state.teams.some(t=>t.id===activeTeamId)) activeTeamId=state.teams[0]?.id||null;
   render();
 }
-function updateAuthUI(){
-  $("loginBtn").classList.toggle("hidden",!!session);
-  $("logoutBtn").classList.toggle("hidden",!session);
-  document.querySelectorAll(".admin-only").forEach(e=>e.classList.toggle("hidden",!isAdmin()));
+async function updateAuthUI(){
+  adminStatus = false;
+
+  if (session?.user) {
+    const { data, error } = await db
+      .from("admin_users")
+      .select("user_id")
+      .eq("user_id", session.user.id)
+      .maybeSingle();
+
+    adminStatus = !error && !!data;
+  }
+
+  $("loginBtn").classList.toggle("hidden", !!session);
+  $("logoutBtn").classList.toggle("hidden", !session);
+
+  document.querySelectorAll(".admin-only")
+    .forEach(e => e.classList.toggle("hidden", !adminStatus));
 }
 function renderEmpty(){ $("teamSelect").innerHTML=""; $("board").innerHTML="<div class='status'>Connect Supabase to load the bingo board.</div>"; }
 function activeTeam(){ return state.teams.find(t=>t.id===activeTeamId); }
