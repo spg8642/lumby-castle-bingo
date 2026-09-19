@@ -29,14 +29,20 @@ function isAdmin(){
 async function init(){
   if(!configured){ setSetupNotice("<strong>Setup required:</strong> Add your Supabase URL and anon key to <code>app.js</code>. See <code>README.md</code>."); renderEmpty(); return; }
   setSetupNotice("", false);
-  const {data:{session:s}} = await db.auth.getSession(); session=s; updateAuthUI();
+  const {data:{session:s}} = await db.auth.getSession();
+session = s;
+await updateAuthUI();
   await loadAll();
   db.channel("bingo-live")
     .on("postgres_changes",{event:"*",schema:"public",table:"teams"},loadAll)
     .on("postgres_changes",{event:"*",schema:"public",table:"tasks"},loadAll)
     .on("postgres_changes",{event:"*",schema:"public",table:"completions"},loadAll)
     .subscribe();
-  db.auth.onAuthStateChange((_e,s)=>{session=s;updateAuthUI();});
+  db.auth.onAuthStateChange(async (_e, s) => {
+  session = s;
+  await updateAuthUI();
+  render();
+});
 }
 async function loadAll(){
   const [teams,tasks,comps] = await Promise.all([
