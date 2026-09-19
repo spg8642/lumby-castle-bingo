@@ -6,7 +6,7 @@
   4) Create an admin account in Supabase Auth, then add its UUID to admin_users.
 */
 const SUPABASE_URL = "https://dalmbojtmewamdvyopfh.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRhbG1ib2p0bWV3YW1kdnlvcGZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk3NzI4ODAsImV4cCI6MjEwNTM0ODg4MH0.aUTDzmDpKYfEZW1gZDyWBjyMlYzHUcR-zNU2A7aIV6w";
+const SUPABASE_ANON_KEY = "sb_publishable_VxVvixDgPN7dnrfoPbCQpw_et5ZeR8t";
 
 const configured = !SUPABASE_URL.startsWith("YOUR_") && !SUPABASE_ANON_KEY.startsWith("YOUR_");
 const db = configured ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
