@@ -194,5 +194,3 @@ async function init(){
     .subscribe();
 }
 init();
-
-init();
