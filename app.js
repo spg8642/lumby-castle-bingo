@@ -119,7 +119,7 @@ async function setCompletion(taskId,completed,verified){
 }
 $("teamSelect").onchange=e=>{activeTeamId=e.target.value;render()};
 $("closeModal").onclick=()=>$("modal").classList.add("hidden");
-$("loginBtn").onclick=async()=>{const email=prompt("Admin email:");if(!email)return;const {error}=await db.auth.signInWithOtp({email,options:{emailRedirectTo:location.href}});alert(error?error.message:"Check your email for the login link.")};
+$("loginBtn").onclick=async()=>{const email=prompt("Admin email:");if(!email)return;const {error}=await db.auth.signInWithOtp({email,options:{emailRedirectTo:emailRedirectTo: "https://spg8642.github.io/lumby-castle-bingo/".href}});alert(error?error.message:"Check your email for the login link.")};
 $("logoutBtn").onclick=()=>db.auth.signOut();
 $("addTeamBtn").onclick=async()=>{if(!isAdmin())return;const name=prompt("Team name:");if(!name)return;const p1=prompt("Player 1:")||"";const p2=prompt("Player 2:")||"";await db.from("teams").insert({name,player1:p1,player2:p2})};
 $("editTeamBtn").onclick=async()=>{const t=activeTeam();if(!t)return;const name=prompt("Team name:",t.name)||t.name;const p1=prompt("Player 1:",t.player1)||t.player1;const p2=prompt("Player 2:",t.player2)||t.player2;await db.from("teams").update({name,player1:p1,player2:p2}).eq("id",t.id)};
