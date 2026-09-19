@@ -280,17 +280,102 @@ $("teamSelect").onchange = e => {
 
 $("closeModal").onclick = () => $("modal").classList.add("hidden");
 
-$("loginBtn").onclick = async () => {
-  const email = prompt("Admin email:");
-  if (!email) return;
+function ensureLoginModal() {
+  if ($("adminLoginModal")) return;
 
-  const password = prompt("Admin password:");
-  if (!password) return;
+  const style = document.createElement("style");
+  style.textContent = `
+    #adminLoginModal { position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.72); padding:20px; }
+    #adminLoginModal.hidden { display:none; }
+    .admin-login-card { width:min(420px,100%); background:#151515; color:#fff; border:1px solid #444; border-radius:12px; padding:24px; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+    .admin-login-card h2 { margin:0 0 8px; }
+    .admin-login-card p { margin:0 0 18px; opacity:.78; }
+    .admin-login-card label { display:block; margin:12px 0 6px; font-weight:600; }
+    .admin-login-card input { box-sizing:border-box; width:100%; padding:11px 12px; border:1px solid #555; border-radius:7px; background:#222; color:#fff; font:inherit; }
+    .admin-login-card input:focus { outline:2px solid #777; outline-offset:1px; }
+    .admin-login-actions { display:flex; gap:10px; margin-top:18px; }
+    .admin-login-actions button { flex:1; padding:11px 14px; border-radius:7px; border:1px solid #555; cursor:pointer; font:inherit; }
+    #adminLoginSubmit { background:#e7e7e7; color:#111; }
+    #adminLoginCancel { background:#252525; color:#fff; }
+    #adminLoginError { color:#ff8b8b; min-height:20px; margin-top:12px; font-size:.92rem; }
+    #adminLoginModal .password-wrap { position:relative; }
+    #adminLoginModal .show-password { position:absolute; right:8px; top:50%; transform:translateY(-50%); border:0; background:transparent; color:#ccc; cursor:pointer; padding:4px; }
+  `;
+  document.head.appendChild(style);
+
+  const modal = document.createElement("div");
+  modal.id = "adminLoginModal";
+  modal.className = "hidden";
+  modal.innerHTML = `
+    <div class="admin-login-card" role="dialog" aria-modal="true" aria-labelledby="adminLoginTitle">
+      <h2 id="adminLoginTitle">Admin Login</h2>
+      <p>Sign in with your bingo administrator account.</p>
+      <form id="adminLoginForm">
+        <label for="adminEmail">Email</label>
+        <input id="adminEmail" type="email" autocomplete="username" placeholder="admin@example.com" required>
+        <label for="adminPassword">Password</label>
+        <div class="password-wrap">
+          <input id="adminPassword" type="password" autocomplete="current-password" placeholder="Enter your password" required>
+          <button type="button" class="show-password" id="showAdminPassword" aria-label="Show password">Show</button>
+        </div>
+        <div id="adminLoginError"></div>
+        <div class="admin-login-actions">
+          <button type="button" id="adminLoginCancel">Cancel</button>
+          <button type="submit" id="adminLoginSubmit">Log In</button>
+        </div>
+      </form>
+    </div>`;
+  document.body.appendChild(modal);
+
+  $("adminLoginCancel").onclick = closeAdminLogin;
+  $("showAdminPassword").onclick = () => {
+    const input = $("adminPassword");
+    const showing = input.type === "text";
+    input.type = showing ? "password" : "text";
+    $("showAdminPassword").textContent = showing ? "Show" : "Hide";
+  };
+
+  modal.addEventListener("click", e => {
+    if (e.target === modal) closeAdminLogin();
+  });
+
+  $("adminLoginForm").onsubmit = handleAdminLogin;
+}
+
+function openAdminLogin() {
+  ensureLoginModal();
+  $("adminLoginError").textContent = "";
+  $("adminEmail").value = "";
+  $("adminPassword").value = "";
+  $("adminPassword").type = "password";
+  $("showAdminPassword").textContent = "Show";
+  $("adminLoginModal").classList.remove("hidden");
+  setTimeout(() => $("adminEmail").focus(), 0);
+}
+
+function closeAdminLogin() {
+  if ($("adminLoginModal")) $("adminLoginModal").classList.add("hidden");
+}
+
+async function handleAdminLogin(e) {
+  e.preventDefault();
+  const email = $("adminEmail").value.trim();
+  const password = $("adminPassword").value;
+  const errorBox = $("adminLoginError");
+  const button = $("adminLoginSubmit");
+
+  if (!email || !password) return;
+
+  button.disabled = true;
+  button.textContent = "Logging in...";
+  errorBox.textContent = "";
 
   const { error } = await db.auth.signInWithPassword({ email, password });
 
   if (error) {
-    alert("Login failed: " + error.message);
+    errorBox.textContent = "Login failed: " + error.message;
+    button.disabled = false;
+    button.textContent = "Log In";
     return;
   }
 
@@ -298,10 +383,22 @@ $("loginBtn").onclick = async () => {
   await updateAuthUI();
   await loadAll();
 
+  button.disabled = false;
+  button.textContent = "Log In";
+
   if (!isAdmin()) {
-    alert("Login succeeded, but this account is not listed as a bingo administrator.");
+    errorBox.textContent = "This account can sign in, but it is not listed as a bingo administrator.";
+    await db.auth.signOut();
+    session = null;
+    adminStatus = false;
+    await updateAuthUI();
+    return;
   }
-};
+
+  closeAdminLogin();
+}
+
+$("loginBtn").onclick = openAdminLogin;
 
 $("logoutBtn").onclick = async () => {
   await db.auth.signOut();
