@@ -29,7 +29,7 @@
 <section class="panel controls">
   <div>
     <label>Active Team</label>
-    <select id="teamSelect"></select>
+    <select id="activeTeam"></select>
   </div>
   <div class="team-actions admin-only">
     <button id="addTeamBtn">+ Add Team</button>
@@ -58,7 +58,7 @@
 
   <div class="panel leaderboard">
     <div class="section-heading"><h2>Live Leaderboard</h2><span id="lastUpdated"></span></div>
-    <div id="leaderboardRows"></div>
+    <div id="leaderboard"></div>
   </div>
 </section>
 
@@ -66,21 +66,21 @@
   <div class="section-heading">
     <div>
       <h2>5×5 Bingo Board</h2>
-      <p>Click a tile to view its status and submit/verify completion.</p>
+      <p>Click a tile to view its status and update shared progress.</p>
     </div>
     <div class="legend">
       <span><i class="completed"></i> Completed</span>
       <span><i class="verified"></i> Verified</span>
     </div>
   </div>
-  <div id="board" class="board"></div>
+  <div id="bingoBoard" class="board"></div>
 </section>
 
 <section class="panel tasks-panel admin-only">
   <div class="section-heading">
-    <div><h2>Task List</h2><p>Admins can edit task names and point values.</p></div>
+    <div><h2>Task List</h2><p>Admins can edit task quantities.</p></div>
   </div>
-  <div id="taskEditor"></div>
+  <div id="taskList"></div>
 </section>
 </main>
 
